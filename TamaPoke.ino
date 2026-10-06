@@ -3308,10 +3308,11 @@ static void buildSquad(uint8_t maxLvl, uint8_t maxCount, uint16_t mask) {
   btlPetIn = false;
   if (maxCount > TRAINER_TEAM_MAX) maxCount = TRAINER_TEAM_MAX;
   if (!pet.isEgg() && btlSquadN < maxCount && (mask & 1)) {
-    Pet tmp = pet;                       // a copy: the real pet is untouched
-    if (maxLvl && tmp.level() > maxLvl)
-      tmp.ageMinutes = (uint32_t)(maxLvl - 1) * MINUTES_PER_LEVEL;
-    combatantFromPet(btlSquad[btlSquadN++], tmp);
+    uint32_t oldAge = pet.ageMinutes;
+    if (maxLvl && pet.level() > maxLvl)
+      pet.ageMinutes = (uint32_t)(maxLvl - 1) * MINUTES_PER_LEVEL;
+    combatantFromPet(btlSquad[btlSquadN++], pet);
+    pet.ageMinutes = oldAge;
     btlPetIn = true;      // the training reward goes to whoever fought for it
   }
   for (int i = 0; i < PARTY_SLOTS && btlSquadN < maxCount; i++) {
@@ -3379,6 +3380,7 @@ void startTrainerBattle(uint8_t idx, bool hard) {
   // size cap on top, plus a smarter AI and better opposing IVs.
   buildSquad(top, hard ? tr.count : TRAINER_TEAM_MAX, squadMask);
   if (!btlSquadN) return;
+  btlRegion = gymRegion;
   btlTrainer = (int8_t)idx;
   btlHard = hard;
   btlFoeAt = 0;

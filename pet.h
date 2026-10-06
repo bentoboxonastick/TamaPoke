@@ -83,6 +83,10 @@ uint8_t nextAvailableRegion(uint8_t from);
 
 class Pet {
 public:
+  Pet() = default;
+  Pet(const Pet &) = delete;
+  Pet &operator=(const Pet &) = delete;
+
   // Estadisticas 0..100
   uint8_t fullness = 80;  // comida
   uint8_t joy = 80;       // felicidad

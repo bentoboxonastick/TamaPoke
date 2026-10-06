@@ -189,7 +189,7 @@ static void audioTask(void *) {
 
   for (;;) {
     uint8_t m = gMusic;
-    bool wantAudio = (m != MUS_NONE) || gSyn.busy();
+    bool wantAudio = (m != MUS_NONE);
     if (!gOn || !gReady) { gSyn.allOff(); m = MUS_NONE; wantAudio = false; }
 
     // An effect always wins the melody voice. With three voices a cue that
@@ -215,7 +215,8 @@ static void audioTask(void *) {
     }
 
     if (m == MUS_NONE) {
-      if (ampOn && !gSyn.busy()) { digitalWrite(PA, LOW); ampOn = false; }
+      gSyn.allOff();
+      if (ampOn) { digitalWrite(PA, LOW); ampOn = false; }
       playing = MUS_NONE; mi1 = mi2 = 0; at1 = at2 = clock = 0;
       continue;
     }
@@ -239,11 +240,20 @@ static void audioTask(void *) {
       at1 = clock + n.ms;
     }
     if (clock >= at2) {
-      if (mi2 >= t.n2) { mi2 = 0; at2 = clock; }
-      const MusicNote &n = t.ch2[mi2++];
-      if (n.freq) gSyn.note(1, n.freq, n.duty, n.vol, n.envDir, n.envPeriod, n.ms);
-      else gSyn.silence(1);
-      at2 = clock + n.ms;
+      if (mi2 >= t.n2) {
+        if (m == MUS_VICTORY) {
+          gSyn.silence(1);
+          at2 = UINT32_MAX;
+        } else {
+          mi2 = 0; at2 = clock;
+        }
+      }
+      if (mi2 < t.n2) {
+        const MusicNote &n = t.ch2[mi2++];
+        if (n.freq) gSyn.note(1, n.freq, n.duty, n.vol, n.envDir, n.envPeriod, n.ms);
+        else gSyn.silence(1);
+        at2 = clock + n.ms;
+      }
     }
     uint32_t next = (at1 < at2) ? at1 : at2;
     if (next <= clock) next = clock + 5;
