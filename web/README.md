@@ -97,17 +97,39 @@ attribution is allowed); see [`../CREDITS.md`](../CREDITS.md).
 ### Option A: GitHub Actions (Recommended)
 
 1. Repo settings → **Pages** → **Build and deployment** → Source: select **GitHub Actions**.
-2. Push to `main` (with changes in `web/`) or manually run the **Deploy Web Installer to GitHub Pages** workflow under the **Actions** tab.
-3. The site deploys automatically to `https://<user>.github.io/<repo>/`.
+2. Push to `main` or manually trigger the **Deploy Web Installer to GitHub Pages** workflow under the **Actions** tab.
+3. The workflow automatically:
+   - Sets up `arduino-cli` with the ESP32 core and required libraries (`GFX Library for Arduino`, `SensorLib`, `XPowersLib`).
+   - Runs `tools/build_web.sh` to compile `TamaPoke.ino` and regenerate the binaries in `web/firmware/` (`app.bin`, `bootloader.bin`, `partitions.bin`, `boot_app0.bin`, `tamapoke.bin`).
+   - Validates that the manifest cannot overwrite NVS save memory (`tools/check_installer.py`).
+   - Deploys the freshly built installer directly to GitHub Pages at `https://<user>.github.io/<repo>/`.
+
+> **Note:** Because the action compiles the firmware automatically in CI, you do not need to install `arduino-cli` locally or manually commit recompiled `.bin` files when updating sketch code.
 
 ### Option B: Deploy from branch
 
 1. Repo settings → **Pages** → Source: **Deploy from a branch** → Branch: `main`, folder `/web`.
 2. Pages serves `/web` directly and provides HTTPS automatically.
+   *(Note: This serves whatever static binaries are pre-committed in `web/firmware/`; it will not compile sketch updates automatically).*
 
 > **Pages on private repos** needs GitHub Pro/Team. If you make the repo
 > **public** to use Pages for free, decide about the sprites first (see above and
 > CREDITS).
+
+## Serial Debugging & Diagnostics
+
+The firmware provides real-time logging and debug commands over USB Serial (115200 baud), accessible via Chrome/Edge Web Serial, the Arduino IDE Serial Monitor, or `arduino-cli monitor`:
+
+- **Boot & Progress Logs**:
+  - `[BADGE] Loaded: Kanto=0x... Johto=0x...` logs all regional badge masks restored from NVS on boot.
+  - `[BADGE] Win: rg=<n> (<Region>) idx=<n> hard=<0|1> mask=0x...` logs when a gym badge is awarded.
+  - `[BATTLE] Won against trainer ...` confirms badge awards or notes already-owned badges upon victory.
+
+- **Helpful Console Commands**:
+  - `STATS` — Dumps full pet stats (species, level, care, IVs, training) and badge bitmasks across all regions.
+  - `BADGES` — Displays current easy and hard mode badge bitmasks for every region.
+  - `BADGE <rg> <idx> [hard]` — Manually awards a badge (e.g. `BADGE 0 0` for Brock) to verify persistence across reboots without battling.
+  - `EXPORT` / `IMPORT` — Dumps and restores full NVS save backups.
 
 ## Limitations
 

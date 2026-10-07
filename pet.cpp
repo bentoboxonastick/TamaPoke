@@ -1392,6 +1392,12 @@ void Pet::load() {
   if (avatar >= AVATAR_COUNT) avatar = 0;   // a save from when there were four
   badges = prefs.getUShort("badg", 0);
   badgesHard = prefs.getUShort("badh", 0);
+  Serial.printf("[BADGE] Loaded: Kanto=0x%04X/0x%04X", badges, badgesHard);
+  for (uint8_t r = 1; r < GYM_REGIONS; r++) {
+    Serial.printf(" %s=0x%04X/0x%04X", (r < REGION_COUNT ? REGIONS[r].name : "?"),
+                  badgesX[r - 1], badgesHardX[r - 1]);
+  }
+  Serial.println();
   if (!isEgg() && moveCount() == 0 && lastLearnLevel == 0) {
     // save from before moves existed: hand it the set it should already have
     // rather than a queue of every gate it ever passed

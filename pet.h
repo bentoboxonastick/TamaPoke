@@ -252,6 +252,9 @@ public:
     if (rg == 0) { if (hard) badgesHard |= bit; else badges |= bit; }
     else if (hard) badgesHardX[rg - 1] |= bit;
     else badgesX[rg - 1] |= bit;
+    Serial.printf("[BADGE] Win: rg=%u (%s) idx=%u hard=%d mask=0x%04X\n",
+                  rg, (rg < REGION_COUNT ? REGIONS[rg].name : "?"), i,
+                  hard ? 1 : 0, badgeMask(rg, hard));
     save();
   }
   uint8_t badgeCountIn(uint8_t rg, bool hard) const {

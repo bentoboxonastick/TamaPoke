@@ -1106,6 +1106,28 @@ void handleSerial() {
     Serial.printf("shiny=%d streak=%u/%u bond=%u medals=0x%X(%u) nick=%s\n",
                   pet.shiny, pet.streak, pet.bestStreak, pet.bond, pet.medals,
                   pet.totalMedals, pet.nick);
+    Serial.printf("badges(easy/hard): Kanto=0x%04X/0x%04X", pet.badges, pet.badgesHard);
+    for (uint8_t r = 1; r < GYM_REGIONS; r++) {
+      Serial.printf(" %s=0x%04X/0x%04X", (r < REGION_COUNT ? REGIONS[r].name : "?"),
+                    pet.badgeMask(r, false), pet.badgeMask(r, true));
+    }
+    Serial.println();
+    Serial.println("DONE");
+  } else if (line == "BADGES") {
+    Serial.printf("badges(easy/hard): Kanto=0x%04X/0x%04X", pet.badges, pet.badgesHard);
+    for (uint8_t r = 1; r < GYM_REGIONS; r++) {
+      Serial.printf(" %s=0x%04X/0x%04X", (r < REGION_COUNT ? REGIONS[r].name : "?"),
+                    pet.badgeMask(r, false), pet.badgeMask(r, true));
+    }
+    Serial.println();
+    Serial.println("DONE");
+  } else if (line.startsWith("BADGE ")) {
+    int rg = 0, idx = 0, hard = 0;
+    int n = sscanf(line.c_str() + 6, "%d %d %d", &rg, &idx, &hard);
+    if (n >= 2 && rg >= 0 && rg < GYM_REGIONS && idx >= 0 && idx < TRAINER_COUNT) {
+      pet.winBadge((uint8_t)rg, (uint8_t)idx, hard != 0);
+      Serial.printf("awarded badge rg=%d idx=%d hard=%d\n", rg, idx, hard);
+    }
     Serial.println("DONE");
   }
 }
@@ -3622,9 +3644,16 @@ static void btlResolve(uint8_t yourMove) {
     btlWon = btlFoe.fainted();
     btlNewBadge = false;
     btlTrainGain = 0;
-    if (btlWon && btlTrainer >= 0 && !pet.hasBadge(btlRegion, btlTrainer, btlHard)) {
-      pet.winBadge(btlRegion, btlTrainer, btlHard);
-      btlNewBadge = true;
+    if (btlWon && btlTrainer >= 0) {
+      if (!pet.hasBadge(btlRegion, btlTrainer, btlHard)) {
+        Serial.printf("[BATTLE] Won against trainer %d (rg=%u, hard=%d): awarding badge!\n",
+                      btlTrainer, btlRegion, btlHard ? 1 : 0);
+        pet.winBadge(btlRegion, btlTrainer, btlHard);
+        btlNewBadge = true;
+      } else {
+        Serial.printf("[BATTLE] Won against trainer %d (rg=%u, hard=%d): badge already owned\n",
+                      btlTrainer, btlRegion, btlHard ? 1 : 0);
+      }
     }
     // A badge and nothing else made the ladder a one-way checklist. A win now
     // trains the creature that fought for it -- so a leader you can already
